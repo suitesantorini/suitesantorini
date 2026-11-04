@@ -522,7 +522,8 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
   .cal-msg { font-size: .78rem; color: var(--gold-dark); margin-top: 1rem; min-height: 1.2em; }
   .stay-title { font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 1.9rem; color: var(--blue-deep); }
   .stay-dates { font-size: .85rem; color: var(--grey); margin: .3rem 0 1.4rem; }
-  .res-opt { display: grid; grid-template-columns: 64px 1fr auto; gap: 1rem; align-items: center; padding: .85rem .4rem; border-top: 1px solid var(--grey-light); cursor: pointer; width: 100%; background: none; border-left: 0; border-right: 0; border-bottom: 0; text-align: left; font-family: 'Jost', sans-serif; color: inherit; }
+  .res-opts-title { font-size: .62rem; letter-spacing: .25em; text-transform: uppercase; color: var(--gold-dark); margin-bottom: .4rem; }
+  .res-opt { display: grid; grid-template-columns: 64px 1fr auto; gap: 1rem; align-items: center; padding: .85rem .4rem; border-top: 1px solid var(--grey-light); cursor: default; width: 100%; background: none; border-left: 0; border-right: 0; border-bottom: 0; text-align: left; font-family: 'Jost', sans-serif; color: inherit; }
   .res-opt .ph { width: 64px; height: 64px; background: var(--cream) center/cover no-repeat; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
   .res-opt .t { font-size: .95rem; font-weight: 500; color: var(--blue-deep); }
   .res-opt .d2 { font-size: .76rem; color: var(--grey); margin-top: .15rem; line-height: 1.5; }
@@ -571,10 +572,6 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
 
     <div class="res-grid" style="margin-top:2.6rem;">
       <div>
-        <div class="res-pending" id="resPending">
-          <span>✨ Vous avez des options en attente (<b id="resPendingTotal"></b>).</span>
-          <span><a id="resPendingLink" href="#" target="_blank" rel="noopener">Les régler</a> &nbsp; <button type="button" id="resPendingClose">Ignorer</button></span>
-        </div>
         <div class="res-card">
           <div class="cal-head">
             <button type="button" class="cal-arrow" id="calPrev" aria-label="Mois précédent">‹</button>
@@ -595,14 +592,14 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
       <div class="res-card">
         <div class="stay-title">Votre séjour</div>
         <div class="stay-dates" id="stayDates">Sélectionnez votre arrivée puis votre départ.</div>
+        <div class="res-opts-title">Vos attentions, à ajouter à l’étape suivante</div>
         <div id="resOptions"></div>
         <div class="res-tot">
-          <div class="res-row"><span id="rowNights">Nuit</span><span>tarif affiché à l'étape suivante</span></div>
-          <div class="res-row"><span>Options</span><b id="rowOptions">0 €</b></div>
+          <div class="res-row"><span id="rowNights">Nuit</span><span>prix exact à l'étape suivante</span></div>
         </div>
-        <div class="res-remind" id="resRemind" style="display:none;">✨ <b id="remindTotal"></b> d'options se règlent à part, juste après votre réservation. Le lien vers notre boutique, avec vos choix déjà remplis, s'affichera ici.</div>
-        <button type="button" class="res-btn" id="resGo" disabled><span id="resGoLabel">Choisissez vos dates</span><span class="sub2" id="resGoSub" style="display:none;"></span></button>
-        <div class="res-note">Nuit réglée de façon sécurisée sur notre plateforme de réservation · à partir de 149 € la nuit</div>
+        <div class="res-remind">✨ Décoration, champagne, packs, arrivée anticipée, départ tardif : vous les choisissez sur la page de réservation et tout se règle <b>en un seul paiement</b>.</div>
+        <button type="button" class="res-btn" id="resGo" disabled><span id="resGoLabel">Choisissez vos dates</span></button>
+        <div class="res-note">Paiement sécurisé sur notre plateforme de réservation · à partir de 149 € la nuit</div>
         <div class="res-after" id="resAfter"></div>
       </div>
     </div>
@@ -677,18 +674,17 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
 <script>
 (function () {
   // ───────── RÉGLAGES ─────────
-  var BOUTIQUE = 'https://suitesantoriniupsells.netlify.app/';
   var AVAIL_URL = '/.netlify/functions/availability';
-  // Lien de réservation Lodgify avec dates pré-remplies. Laisser vide tant qu'il n'est pas testé :
-  // le bouton ouvre alors le formulaire Lodgify classique. Modèle : {arrival} et {departure} au format AAAA-MM-JJ.
+  // Page de réservation Lodgify avec dates pré-remplies ({arrival} et {departure} au format AAAA-MM-JJ)
   var LODGIFY_URL_TEMPLATE = 'https://checkout.lodgify.com/fr/romain-serra/753381/contact?currency=EUR&ref=bnbox&arrival={arrival}&departure={departure}&adults=2';
+  // Attentions proposées à l'étape suivante (à garder identiques aux extras créés dans Lodgify)
   var OPTIONS = [
-    { id: 5, name: 'Arrivée anticipée dès 15h', desc: 'Profitez de la suite plus tôt', price: 24, icon: '🕒' },
-    { id: 6, name: "Départ tardif jusqu'à 13h", desc: 'Prolongez la matinée', price: 24, icon: '🕐' },
-    { id: 1, name: 'Décoration romantique', desc: "Ambiance romantique à votre arrivée", price: 29, alt: 'Décoration romantique Suite Santorini', icon: '🌹' },
-    { id: 3, name: 'Pack sucré', desc: 'Plateau à partager dans la suite', price: 14, alt: 'Pack Sucré Suite Santorini', icon: '🍰' },
-    { id: 4, name: 'Pack salé', desc: 'Plateau à partager dans la suite', price: 14, alt: 'Pack Salé Suite Santorini', icon: '🧀' },
-    { id: 2, name: 'Bouteille de champagne', desc: 'Nicolas Feuillatte, mise au frais', price: 49, alt: 'Champagne Attention Pétillante Suite Santorini', icon: '🥂' }
+    { name: 'Arrivée anticipée dès 15h', desc: 'Profitez de la suite plus tôt', price: 24, icon: '🕒' },
+    { name: "Départ tardif jusqu'à 13h", desc: 'Prolongez la matinée', price: 24, icon: '🕐' },
+    { name: 'Décoration romantique', desc: 'Ambiance romantique à votre arrivée', price: 29, alt: 'Décoration romantique Suite Santorini', icon: '🌹' },
+    { name: 'Pack sucré', desc: 'Plateau à partager dans la suite', price: 14, alt: 'Pack Sucré Suite Santorini', icon: '🍰' },
+    { name: 'Pack salé', desc: 'Plateau à partager dans la suite', price: 14, alt: 'Pack Salé Suite Santorini', icon: '🧀' },
+    { name: 'Attention pétillante', desc: 'Bouteille de champagne mise au frais', price: 49, alt: 'Champagne Attention Pétillante Suite Santorini', icon: '🥂' }
   ];
 
   // ───────── OUTILS ─────────
@@ -702,17 +698,14 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
   var today = iso(new Date());
 
   var booked = {};
-  var availOk = false;
   var view = new Date(); view.setDate(1);
   var arrival = null, departure = null;
-  var chosen = {};
 
   // ───────── CALENDRIER ─────────
   function render() {
     var y = view.getFullYear(), m = view.getMonth();
     $('calMonth').textContent = view.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-    var first = new Date(y, m, 1);
-    var offset = (first.getDay() + 6) % 7;
+    var offset = (new Date(y, m, 1).getDay() + 6) % 7;
     var count = new Date(y, m + 1, 0).getDate();
     var html = '';
     for (var i = 0; i < offset; i++) html += '<div class="cal-d empty"></div>';
@@ -737,7 +730,6 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
     for (var s = a; s < d; s = addDays(s, 1)) { if (booked[s]) return false; }
     return true;
   }
-
   function msg(t) { $('calMsg').textContent = t || ''; }
 
   function pick(ds) {
@@ -746,63 +738,42 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
     if (!arrival || (arrival && departure)) {
       if (booked[ds]) { msg('Cette nuit est déjà réservée.'); return; }
       arrival = ds; departure = null;
+    } else if (ds <= arrival) {
+      if (booked[ds]) { msg('Cette nuit est déjà réservée.'); return; }
+      arrival = ds; departure = null;
+    } else if (rangeFree(arrival, ds)) {
+      departure = ds;
     } else {
-      if (ds <= arrival) {
-        if (booked[ds]) { msg('Cette nuit est déjà réservée.'); return; }
-        arrival = ds; departure = null;
-      } else if (rangeFree(arrival, ds)) {
-        departure = ds;
-      } else {
-        msg('Une des nuits de cette période est déjà réservée. Choisissez d’autres dates.');
-        if (!booked[ds]) { arrival = ds; departure = null; }
-      }
+      msg('Une des nuits de cette période est déjà réservée. Choisissez d’autres dates.');
+      if (!booked[ds]) { arrival = ds; departure = null; }
     }
     $('resAfter').className = 'res-after';
     update(); render();
   }
 
-  // ───────── OPTIONS ─────────
+  // ───────── ATTENTIONS (informatif) ─────────
   function buildOptions() {
     var html = '';
     OPTIONS.forEach(function (o) {
-      var style = '';
-      var inner = o.icon;
+      var style = '', inner = o.icon;
       if (o.alt) {
         var im = document.querySelector('img[alt="' + o.alt + '"]');
-        if (im && im.src) { style = ' style="background-image:url(\'' + im.src.replace(/'/g, "%27") + '\')"'; inner = ''; }
+        if (im && im.src) { style = ' style="background-image:url(\'' + im.src.replace(/'/g, '%27') + '\')"'; inner = ''; }
       }
-      html += '<button type="button" class="res-opt" data-id="' + o.id + '"><div class="ph"' + style + '>' + inner + '</div>' +
+      html += '<div class="res-opt"><div class="ph"' + style + '>' + inner + '</div>' +
         '<div><div class="t">' + o.name + '</div><div class="d2">' + o.desc + '</div></div>' +
-        '<div class="p">' + o.price + ' €<span class="chk"></span></div></button>';
+        '<div class="p">' + o.price + ' €</div></div>';
     });
     $('resOptions').innerHTML = html;
   }
 
-  function optionsTotal() {
-    var t = 0;
-    OPTIONS.forEach(function (o) { if (chosen[o.id]) t += o.price; });
-    return t;
-  }
-  function chosenIds() {
-    return OPTIONS.filter(function (o) { return chosen[o.id]; }).map(function (o) { return o.id; });
-  }
-  function boutiqueLink() {
-    var ids = chosenIds();
-    if (!ids.length) return BOUTIQUE;
-    var u = BOUTIQUE + '?o=' + ids.join(',');
-    if (arrival) u += '&a=' + arrival;
-    if (departure) u += '&d=' + departure;
-    return u;
-  }
-
   function update() {
-    var t = optionsTotal();
     if (arrival && departure) {
       var n = nights(arrival, departure);
       $('stayDates').textContent = fmt(arrival) + ' → ' + fmt(departure) + ' · ' + n + ' nuit' + (n > 1 ? 's' : '');
       $('rowNights').textContent = n + ' nuit' + (n > 1 ? 's' : '');
       $('resGo').disabled = false;
-      $('resGoLabel').textContent = 'Réserver la nuit';
+      $('resGoLabel').textContent = 'Réserver';
     } else if (arrival) {
       $('stayDates').textContent = 'Arrivée le ' + fmt(arrival) + ' — choisissez maintenant votre départ.';
       $('rowNights').textContent = 'Nuit';
@@ -814,58 +785,24 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
       $('resGo').disabled = true;
       $('resGoLabel').textContent = 'Choisissez vos dates';
     }
-    $('rowOptions').textContent = t + ' €';
-    $('resRemind').style.display = t > 0 ? 'block' : 'none';
-    $('remindTotal').textContent = '(' + t + ' €)';
-    var sub = $('resGoSub');
-    if (t > 0 && arrival && departure) { sub.style.display = 'block'; sub.textContent = '+ ' + t + ' € d’options à régler ensuite'; }
-    else sub.style.display = 'none';
-    var btns = document.querySelectorAll('.res-opt');
-    for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('on', !!chosen[btns[i].getAttribute('data-id')]);
   }
 
   // ───────── RÉSERVER ─────────
-  function save(link, total) {
-    try { localStorage.setItem('ss_pending', JSON.stringify({ link: link, total: total, a: arrival, ts: Date.now() })); } catch (e) {}
-  }
-
   function go() {
     if (!arrival || !departure) return;
-    var t = optionsTotal();
-    var link = boutiqueLink();
-    var html = '';
+    var url = LODGIFY_URL_TEMPLATE.replace('{arrival}', arrival).replace('{departure}', departure);
+    var w = window.open(url, '_blank');
     var after = $('resAfter');
-    if (LODGIFY_URL_TEMPLATE) {
-      var url = LODGIFY_URL_TEMPLATE.replace('{arrival}', arrival).replace('{departure}', departure);
-      window.open(url, '_blank');
-      html += '<b>Votre réservation s’est ouverte dans un nouvel onglet</b> (si rien ne s’affiche, autorisez les fenêtres pop-up). Confirmez-y votre nuit : ' + fmt(arrival) + ' → ' + fmt(departure);
-    } else {
-      var box = $('resClassic');
-      box.open = true;
-      html += '<b>Dernière étape pour la nuit :</b> saisissez vos dates (arrivée le ' + fmt(arrival) + ', départ le ' + fmt(departure) + ') dans le formulaire de réservation qui vient de s’ouvrir plus bas.';
-      setTimeout(function () { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 150);
-    }
-    if (t > 0) {
-      html += '<br><br>✨ <b>N’oubliez pas vos options (' + t + ' €)</b> : une fois la nuit confirmée, réglez-les ici.' +
-        '<a class="go" href="' + link + '" target="_blank" rel="noopener">Régler mes options</a>' +
-        '<button type="button" class="copy" id="resCopy">Copier le lien</button>';
-      save(link, t);
-    }
-    after.innerHTML = html;
+    after.innerHTML = '<b>Votre réservation s’est ouverte dans un nouvel onglet.</b> ' + fmt(arrival) + ' → ' + fmt(departure) +
+      '<br>Vous y choisirez vos attentions (décoration, champagne, packs…) avant de régler en un seul paiement.' +
+      (w ? '' : '<a class="go" href="' + url + '" target="_blank" rel="noopener">Ouvrir la réservation</a>');
     after.className = 'res-after show';
-    var c = $('resCopy');
-    if (c) c.addEventListener('click', function () {
-      if (navigator.clipboard) navigator.clipboard.writeText(link).then(function () { c.textContent = 'Lien copié ✓'; });
-      else { c.textContent = link; }
-    });
   }
 
   // ───────── DÉMARRAGE ─────────
-  buildOptions();
-  update();
-  render();
-  // Les photos des options sont plus bas dans la page : on reconstruit la liste une fois tout chargé
-  document.addEventListener('DOMContentLoaded', function () { buildOptions(); update(); });
+  buildOptions(); update(); render();
+  // Les photos sont plus bas dans la page : on reconstruit la liste une fois tout chargé
+  document.addEventListener('DOMContentLoaded', buildOptions);
 
   $('calDays').addEventListener('click', function (e) {
     var b = e.target.closest('.cal-d');
@@ -873,36 +810,14 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
   });
   $('calPrev').addEventListener('click', function () { view.setMonth(view.getMonth() - 1); render(); });
   $('calNext').addEventListener('click', function () { view.setMonth(view.getMonth() + 1); render(); });
-  $('resOptions').addEventListener('click', function (e) {
-    var b = e.target.closest('.res-opt');
-    if (!b) return;
-    var id = b.getAttribute('data-id');
-    chosen[id] = !chosen[id];
-    $('resAfter').className = 'res-after';
-    update();
-  });
   $('resGo').addEventListener('click', go);
 
   fetch(AVAIL_URL).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (j) {
     (j.booked || []).forEach(function (d) { booked[d] = true; });
-    availOk = true; render();
+    render();
   }).catch(function () {
     msg('Disponibilités confirmées à l’étape de réservation.');
   });
-
-  // Options en attente (si le client revient sur le site)
-  try {
-    var p = JSON.parse(localStorage.getItem('ss_pending') || 'null');
-    if (p && p.link && (Date.now() - p.ts) < 14 * 86400000 && (!p.a || p.a >= today)) {
-      $('resPendingTotal').textContent = p.total + ' €';
-      $('resPendingLink').href = p.link;
-      $('resPending').className = 'res-pending show';
-      $('resPendingClose').addEventListener('click', function () {
-        try { localStorage.removeItem('ss_pending'); } catch (e) {}
-        $('resPending').className = 'res-pending';
-      });
-    }
-  } catch (e) {}
 })();
 </script>
 
