@@ -343,7 +343,7 @@
   .lb-counter { position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%); font-size: 0.68rem; letter-spacing: 0.25em; color: rgba(255,255,255,0.45); }
 
   /* ─── REVEAL ─── */
-  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal { opacity: 1; transform: none; }
   .reveal.visible { opacity: 1; transform: translateY(0); }
 
   /* ─── RESPONSIVE ─── */
@@ -1073,25 +1073,6 @@ document.querySelectorAll('.g-item img').forEach(img => {
   };
 });
 
-// ── Scroll reveal ──
-const obs = new IntersectionObserver(entries => {
-  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-}, { threshold: 0.12 });
-document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
-</script>
-<script>
-// Filet de sécurité : les sections s'affichent toujours, même si un autre script plante
-(function () {
-  var els = document.querySelectorAll('.reveal');
-  function show() { els.forEach(function (e) { e.classList.add('visible'); }); }
-  if (!('IntersectionObserver' in window)) { show(); return; }
-  var o = new IntersectionObserver(function (es) {
-    es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('visible'); o.unobserve(e.target); } });
-  }, { threshold: 0 });
-  els.forEach(function (e) { o.observe(e); });
-  window.addEventListener('load', function () { setTimeout(show, 2500); });
-  setTimeout(show, 4000);
-})();
 </script>
 </body>
 </html>
