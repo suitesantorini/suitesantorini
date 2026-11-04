@@ -602,7 +602,6 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
         <div class="res-remind">✨ Décoration, champagne, packs, arrivée anticipée, départ tardif : vous les choisissez sur la page de réservation et tout se règle <b>en un seul paiement</b>.</div>
         <button type="button" class="res-btn" id="resGo" disabled><span id="resGoLabel">Choisissez vos dates</span></button>
         <div class="res-note">Paiement sécurisé sur notre plateforme de réservation · à partir de 149 € la nuit</div>
-        <div class="res-after" id="resAfter"></div>
       </div>
     </div>
 
@@ -749,7 +748,6 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
       msg('Une des nuits de cette période est déjà réservée. Choisissez d’autres dates.');
       if (!booked[ds]) { arrival = ds; departure = null; }
     }
-    $('resAfter').className = 'res-after';
     update(); render();
   }
 
@@ -796,13 +794,8 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
   // ───────── RÉSERVER ─────────
   function go() {
     if (!arrival || !departure) return;
-    var url = LODGIFY_URL_TEMPLATE.replace('{arrival}', arrival).replace('{departure}', departure);
-    var w = window.open(url, '_blank');
-    var after = $('resAfter');
-    after.innerHTML = '<b>Votre réservation s’est ouverte dans un nouvel onglet.</b> ' + fmt(arrival) + ' → ' + fmt(departure) +
-      '<br>Vous y choisirez vos attentions (décoration, champagne, packs…) avant de régler en un seul paiement.' +
-      (w ? '' : '<a class="go" href="' + url + '" target="_blank" rel="noopener">Ouvrir la réservation</a>');
-    after.className = 'res-after show';
+    // Redirection directe (même onglet) vers l'étape Suppléments de Lodgify, dates pré-remplies
+    window.location.href = LODGIFY_URL_TEMPLATE.replace('{arrival}', arrival).replace('{departure}', departure);
   }
 
   // ───────── DÉMARRAGE ─────────
