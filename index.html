@@ -795,7 +795,16 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
   function go() {
     if (!arrival || !departure) return;
     // Redirection directe (même onglet) vers l'étape Suppléments de Lodgify, dates pré-remplies
-    window.location.href = LODGIFY_URL_TEMPLATE.replace('{arrival}', arrival).replace('{departure}', departure);
+    var url = LODGIFY_URL_TEMPLATE.replace('{arrival}', arrival).replace('{departure}', departure);
+    var done = false;
+    function leave() { if (!done) { done = true; window.location.href = url; } }
+    // Suivi Meta : le visiteur a choisi ses dates et clique sur Réserver (sert à la relance publicitaire)
+    try {
+      if (typeof fbq === 'function') {
+        fbq('track', 'InitiateCheckout', { content_name: 'Suite Santorini', num_items: nights(arrival, departure), currency: 'EUR' });
+      }
+    } catch (e) {}
+    setTimeout(leave, 300); // laisse partir l'évènement avant de quitter la page
   }
 
   // ───────── DÉMARRAGE ─────────
