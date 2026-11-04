@@ -586,6 +586,8 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
             <span><i style="background:var(--blue-deep);border-color:var(--blue-deep)"></i>Vos dates</span>
           </div>
           <div class="cal-msg" id="calMsg"></div>
+          <button type="button" class="res-btn" id="resGo2" disabled><span id="resGoLabel2">Choisissez vos dates</span></button>
+          <div class="res-note">Paiement sécurisé · vous choisirez vos attentions à l'étape suivante</div>
         </div>
       </div>
 
@@ -767,23 +769,27 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
     $('resOptions').innerHTML = html;
   }
 
+  function setBtn(dis, label) {
+    ['resGo', 'resGo2'].forEach(function (id, i) {
+      $(id).disabled = dis;
+      $(i ? 'resGoLabel2' : 'resGoLabel').textContent = label;
+    });
+  }
+
   function update() {
     if (arrival && departure) {
       var n = nights(arrival, departure);
       $('stayDates').textContent = fmt(arrival) + ' → ' + fmt(departure) + ' · ' + n + ' nuit' + (n > 1 ? 's' : '');
       $('rowNights').textContent = n + ' nuit' + (n > 1 ? 's' : '');
-      $('resGo').disabled = false;
-      $('resGoLabel').textContent = 'Réserver';
+      setBtn(false, 'Réserver · ' + n + ' nuit' + (n > 1 ? 's' : ''));
     } else if (arrival) {
       $('stayDates').textContent = 'Arrivée le ' + fmt(arrival) + ' — choisissez maintenant votre départ.';
       $('rowNights').textContent = 'Nuit';
-      $('resGo').disabled = true;
-      $('resGoLabel').textContent = 'Choisissez votre départ';
+      setBtn(true, 'Choisissez votre départ');
     } else {
       $('stayDates').textContent = 'Sélectionnez votre arrivée puis votre départ.';
       $('rowNights').textContent = 'Nuit';
-      $('resGo').disabled = true;
-      $('resGoLabel').textContent = 'Choisissez vos dates';
+      setBtn(true, 'Choisissez vos dates');
     }
   }
 
@@ -811,6 +817,7 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
   $('calPrev').addEventListener('click', function () { view.setMonth(view.getMonth() - 1); render(); });
   $('calNext').addEventListener('click', function () { view.setMonth(view.getMonth() + 1); render(); });
   $('resGo').addEventListener('click', go);
+  $('resGo2').addEventListener('click', go);
 
   fetch(AVAIL_URL).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (j) {
     (j.booked || []).forEach(function (d) { booked[d] = true; });
@@ -1070,4 +1077,21 @@ document.querySelectorAll('.g-item img').forEach(img => {
 const obs = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
 }, { threshold: 0.12 });
-document.queryS
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+</script>
+<script>
+// Filet de sécurité : les sections s'affichent toujours, même si un autre script plante
+(function () {
+  var els = document.querySelectorAll('.reveal');
+  function show() { els.forEach(function (e) { e.classList.add('visible'); }); }
+  if (!('IntersectionObserver' in window)) { show(); return; }
+  var o = new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('visible'); o.unobserve(e.target); } });
+  }, { threshold: 0 });
+  els.forEach(function (e) { o.observe(e); });
+  window.addEventListener('load', function () { setTimeout(show, 2500); });
+  setTimeout(show, 4000);
+})();
+</script>
+</body>
+</html>
