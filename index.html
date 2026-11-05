@@ -537,6 +537,11 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
   .res-row b { color: var(--blue-deep); font-weight: 500; }
   .res-remind { background: rgba(201,169,110,.16); border-left: 3px solid var(--gold); color: var(--blue-deep); font-size: .8rem; line-height: 1.6; padding: .8rem 1rem; margin-top: 1.2rem; }
   .res-btn { display: block; width: 100%; margin-top: 1.3rem; padding: 1.05rem; background: var(--blue-deep); color: #fff; text-align: center; font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; border: none; cursor: pointer; font-family: 'Jost', sans-serif; transition: background .2s; }
+  .cal-price { display: none; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; border-top: 2px solid var(--blue-deep); margin-top: 1.4rem; padding-top: 1rem; }
+  .cal-price.show { display: flex; }
+  .cal-price .cp-l { font-size: .88rem; color: var(--grey); }
+  .cal-price .cp-v { font-family: 'Cormorant Garamond', serif; font-size: 2rem; color: var(--blue-deep); line-height: 1; }
+  .cal-price .cp-v small { font-family: 'Jost', sans-serif; font-size: .72rem; color: var(--grey); margin-left: .4rem; }
   .res-btn:hover:not(:disabled) { background: var(--gold-dark); }
   .res-btn:disabled { opacity: .45; cursor: not-allowed; }
   .res-btn .sub2 { display: block; text-transform: none; letter-spacing: .02em; font-size: .72rem; opacity: .85; margin-top: .25rem; }
@@ -586,6 +591,7 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
             <span><i style="background:var(--blue-deep);border-color:var(--blue-deep)"></i>Vos dates</span>
           </div>
           <div class="cal-msg" id="calMsg"></div>
+          <div class="cal-price" id="calPrice"><span class="cp-l" id="cpL"></span><span class="cp-v" id="cpV"></span></div>
           <button type="button" class="res-btn" id="resGo2" disabled><span id="resGoLabel2">Choisissez vos dates</span></button>
           <div class="res-note">Paiement sécurisé · vous choisirez vos attentions à l'étape suivante</div>
         </div>
@@ -784,16 +790,23 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
   }
   function loadPrice() {
     var el = $('rowPrice');
+    var cp = $('calPrice');
     var seq = ++priceSeq;
+    cp.className = 'cal-price';
     if (!arrival || !departure) { el.innerHTML = PRICE_FALLBACK; return; }
     el.textContent = 'calcul du prix…';
     fetch(PRICE_URL + '?arrival=' + arrival + '&departure=' + departure)
       .then(function (r) { return r.json(); })
       .then(function (j) {
         if (seq !== priceSeq) return;
-        el.innerHTML = (j && j.ok && typeof j.total === 'number')
-          ? '<b>' + fmtEur(j.total) + '</b> · hors attentions'
-          : PRICE_FALLBACK;
+        var okp = j && j.ok && typeof j.total === 'number';
+        el.innerHTML = okp ? '<b>' + fmtEur(j.total) + '</b> · hors attentions' : PRICE_FALLBACK;
+        if (okp) {
+          var n = nights(arrival, departure);
+          $('cpL').textContent = n + ' nuit' + (n > 1 ? 's' : '') + ' · ' + fmt(arrival) + ' → ' + fmt(departure);
+          $('cpV').innerHTML = fmtEur(j.total) + '<small>hors attentions</small>';
+          cp.className = 'cal-price show';
+        }
       })
       .catch(function () { if (seq === priceSeq) el.innerHTML = PRICE_FALLBACK; });
   }
