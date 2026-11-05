@@ -597,7 +597,7 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
         <div class="res-opts-title">Vos attentions, à ajouter à l’étape suivante</div>
         <div id="resOptions"></div>
         <div class="res-tot">
-          <div class="res-row"><span id="rowNights">Nuit</span><span>prix exact à l'étape suivante</span></div>
+          <div class="res-row"><span id="rowNights">Nuit</span><span id="rowPrice">prix exact à l'étape suivante</span></div>
         </div>
         <div class="res-remind">✨ Décoration, champagne, packs, arrivée anticipée, départ tardif : vous les choisissez sur la page de réservation et tout se règle <b>en un seul paiement</b>.</div>
         <button type="button" class="res-btn" id="resGo" disabled><span id="resGoLabel">Choisissez vos dates</span></button>
@@ -774,19 +774,46 @@ src="https://www.facebook.com/tr?id=1495316694807740&ev=PageView&noscript=1"
     });
   }
 
+  // ───────── PRIX EN DIRECT (API Lodgify via fonction Netlify) ─────────
+  var PRICE_URL = '/.netlify/functions/quote';
+  var PRICE_FALLBACK = "prix exact à l'étape suivante";
+  var priceSeq = 0;
+  function fmtEur(v) {
+    var r = Math.round(v * 100) / 100;
+    return (r % 1 === 0 ? String(r) : r.toFixed(2).replace('.', ',')) + ' €';
+  }
+  function loadPrice() {
+    var el = $('rowPrice');
+    var seq = ++priceSeq;
+    if (!arrival || !departure) { el.innerHTML = PRICE_FALLBACK; return; }
+    el.textContent = 'calcul du prix…';
+    fetch(PRICE_URL + '?arrival=' + arrival + '&departure=' + departure)
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (seq !== priceSeq) return;
+        el.innerHTML = (j && j.ok && typeof j.total === 'number')
+          ? '<b>' + fmtEur(j.total) + '</b> · hors attentions'
+          : PRICE_FALLBACK;
+      })
+      .catch(function () { if (seq === priceSeq) el.innerHTML = PRICE_FALLBACK; });
+  }
+
   function update() {
     if (arrival && departure) {
       var n = nights(arrival, departure);
       $('stayDates').textContent = fmt(arrival) + ' → ' + fmt(departure) + ' · ' + n + ' nuit' + (n > 1 ? 's' : '');
       $('rowNights').textContent = n + ' nuit' + (n > 1 ? 's' : '');
       setBtn(false, 'Réserver · ' + n + ' nuit' + (n > 1 ? 's' : ''));
+      loadPrice();
     } else if (arrival) {
       $('stayDates').textContent = 'Arrivée le ' + fmt(arrival) + ' — choisissez maintenant votre départ.';
       $('rowNights').textContent = 'Nuit';
+      loadPrice();
       setBtn(true, 'Choisissez votre départ');
     } else {
       $('stayDates').textContent = 'Sélectionnez votre arrivée puis votre départ.';
       $('rowNights').textContent = 'Nuit';
+      loadPrice();
       setBtn(true, 'Choisissez vos dates');
     }
   }
