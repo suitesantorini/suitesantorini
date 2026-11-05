@@ -2,7 +2,7 @@
 // Variables d'environnement Netlify :
 //   LODGIFY_API_KEY        (obligatoire)  clé « API publique » de Lodgify
 //   LODGIFY_PROPERTY_ID    (facultatif)   identifiant du logement, 753381 par défaut
-//   LODGIFY_ROOM_TYPE_ID   (facultatif)   identifiant du type de chambre, si Lodgify le demande
+//   LODGIFY_ROOM_TYPE_ID   (facultatif)   identifiant du type de chambre (sinon trouvé automatiquement)
 
 function resp(status, body, cache) {
   return {
@@ -26,7 +26,20 @@ function pickTotal(q) {
   return typeof v === 'number' && isFinite(v) ? v : null;
 }
 
+// Trouve tout seul l'identifiant du type de chambre (Lodgify l'exige pour calculer un prix)
+var roomCache = null;
+function findRoomId(prop) {
+  var rooms = prop && (prop.rooms || prop.room_types || prop.roomTypes);
+  if (Array.isArray(rooms) && rooms.length) {
+    var r = rooms[0];
+    var id = r.id != null ? r.id : (r.room_type_id != null ? r.room_type_id : r.Id);
+    if (id != null) return String(id);
+  }
+  return null;
+}
+
 exports.pickTotal = pickTotal;
+exports.findRoomId = findRoomId;
 
 exports.handler = async function (event) {
   var key = process.env.LODGIFY_API_KEY;
@@ -39,15 +52,27 @@ exports.handler = async function (event) {
   if (nights < 1 || nights > 60) return resp(400, { error: 'durée invalide' });
 
   var property = process.env.LODGIFY_PROPERTY_ID || '753381';
-  var url = 'https://api.lodgify.com/v2/quote/' + encodeURIComponent(property) +
-    '?arrival=' + arrival + '&departure=' + departure;
-  var room = process.env.LODGIFY_ROOM_TYPE_ID;
-  if (room) {
-    url += '&roomTypes[0].Id=' + encodeURIComponent(room) + '&roomTypes[0].guest_breakdown.adults=2';
-  }
-
+  var headers = { 'X-ApiKey': key, 'Accept': 'application/json' };
+  var base = 'https://api.lodgify.com/v2/';
   try {
-    var r = await fetch(url, { headers: { 'X-ApiKey': key, 'Accept': 'application/json' } });
+    // ?info=1 : montre le logement tel que Lodgify le décrit (pour repérer le bon identifiant de chambre)
+    if (qs.info === '1') {
+      var ri = await fetch(base + 'properties/' + encodeURIComponent(property), { headers: headers });
+      var ti = await ri.text(); var di; try { di = JSON.parse(ti); } catch (e) { di = null; }
+      return resp(200, { status: ri.status, roomId: findRoomId(di), lodgify: di ? { id: di.id, name: di.name, rooms: di.rooms } : ti.slice(0, 2000) });
+    }
+
+    var room = process.env.LODGIFY_ROOM_TYPE_ID || roomCache;
+    if (!room) {
+      var rp = await fetch(base + 'properties/' + encodeURIComponent(property), { headers: headers });
+      var tp = await rp.text(); var dp; try { dp = JSON.parse(tp); } catch (e) { dp = null; }
+      room = findRoomId(dp);
+      if (room) roomCache = room;
+    }
+    var url = base + 'quote/' + encodeURIComponent(property) + '?arrival=' + arrival + '&departure=' + departure;
+    if (room) url += '&roomTypes[0].Id=' + encodeURIComponent(room) + '&roomTypes[0].guest_breakdown.adults=2';
+
+    var r = await fetch(url, { headers: headers });
     var text = await r.text();
     var data; try { data = JSON.parse(text); } catch (e) { data = null; }
 
@@ -62,4 +87,3 @@ exports.handler = async function (event) {
     return resp(502, { ok: false, error: 'indisponible' });
   }
 };
-
