@@ -22,6 +22,7 @@ function nightsBetween(a, d) {
 }
 
 function pickTotal(q) {
+  if (Array.isArray(q)) q = q[0]; // Lodgify renvoie le devis dans une liste
   var v = q && (q.total_including_vat != null ? q.total_including_vat : q.amount_gross);
   return typeof v === 'number' && isFinite(v) ? v : null;
 }
@@ -82,7 +83,7 @@ exports.handler = async function (event) {
     if (!r.ok) return resp(200, { ok: false, status: r.status, code: data && (data.code || data.error || data.message) || null });
     var total = pickTotal(data);
     if (total == null) return resp(200, { ok: false, code: 'NoTotal' });
-    return resp(200, { ok: true, total: total, currency: (data && data.currency_code) || 'EUR', nights: nights }, 'public, max-age=60');
+    return resp(200, { ok: true, total: total, currency: ((Array.isArray(data) ? data[0] : data) || {}).currency_code || 'EUR', nights: nights }, 'public, max-age=60');
   } catch (e) {
     return resp(502, { ok: false, error: 'indisponible' });
   }
